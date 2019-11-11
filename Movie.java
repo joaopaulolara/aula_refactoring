@@ -101,7 +101,7 @@ public String statement() {
       double thisAmount = 0;
       Rental each = (Rental) rentals.nextElement();
 
-      thisAmount = amountFor(each);
+      thisAmount = each.getCharge();
 
       // add frequent renter points
       frequentRenterPoints ++;
