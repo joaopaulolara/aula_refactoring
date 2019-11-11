@@ -13,34 +13,52 @@ import java.util.Vector;
  * @author JoÃ£o Paulo
  */
 public class Movie {
-
   public static final int  CHILDRENS = 2;
   public static final int  REGULAR = 0;
   public static final int  NEW_RELEASE = 1;
 
-  private String _title;
-  private int _priceCode;
+    private String _title;
+    private Price _price;
 
-  public Movie(String title, int priceCode) {
-      _title = title;
-      _priceCode = priceCode;
-  }
-
-
-  public int getPriceCode() {
-      return _priceCode;
-  }
-
-  public void setPriceCode(int arg) {
-     _priceCode = arg;
-  }
+   public Movie(String name, int priceCode) {
+      _title = name;
+      setPriceCode(priceCode);
+   }
+    
+   public int getPriceCode() {
+      return _price.getPriceCode();
+   }
+   
+   public void setPriceCode(int arg) {
+      switch (arg) {
+         case REGULAR:
+            _price = new RegularPrice();
+            break;
+         case CHILDRENS:
+            _price = new ChildrensPrice();
+            break;
+         case NEW_RELEASE:
+            _price = new NewReleasePrice();
+            break;
+         default:
+            throw new IllegalArgumentException("Incorrect Price Code");
+      }
+   }
 
   public String getTitle (){
       return _title;
   };
+  
+  double getCharge(int daysRented) {
+      return _price.getCharge(daysRented);
+   }
+  int getFrequentRenterPoints(int daysRented) {
+         return _price.getFrequentRenterPoints(daysRented);
+   }
+  
 }
 
-class Rental {
+    class Rental {
     private Movie _movie;
     private int _daysRented;
 
@@ -55,37 +73,17 @@ class Rental {
       return _movie;
     }
     
-   double getCharge() {
-   double result = 0;
-   switch (getMovie().getPriceCode()) {
-      case Movie.REGULAR:
-         result += 2;
-         if (getDaysRented() > 2)
-            result += (getDaysRented() - 2) * 1.5;
-         break;
-      case Movie.NEW_RELEASE:
-         result += getDaysRented() * 3;
-         break;
-      case Movie.CHILDRENS:
-         result += 1.5;
-         if (getDaysRented() > 3)
-            result += (getDaysRented() - 3) * 1.5;
-         break;
-   }
-   return result;
-}
-   
-   int getFrequentRenterPoints() {
-       if ((getMovie().getPriceCode() == Movie.NEW_RELEASE) && getDaysRented() > 1)
-          return 2;
-       else
-          return 1;
-   }
+    double getCharge() { // veja que não precisa mais de parâmetro
+     return _movie.getCharge(_daysRented);
+    }
     
+    int getFrequentRenterPoints() {
+       return _movie.getFrequentRenterPoints(_daysRented);
+   }
 }
 
 class Customer {
-   private final String _name;
+    private String _name;
    private Vector _rentals = new Vector();
 
    public Customer (String name){
@@ -98,8 +96,27 @@ class Customer {
    public String getName (){
       return _name;
    };
-  
-public String statement() {
+ private double getTotalCharge() {
+       double result = 0;
+       Enumeration rentals = _rentals.elements();
+       while (rentals.hasMoreElements()) {
+          Rental each = (Rental) rentals.nextElement();
+          result += each.getCharge();
+       }
+       return result;
+     }
+ 
+ private int getTotalFrequentRenterPoints(){
+        int result = 0;
+        Enumeration rentals = _rentals.elements();
+        while (rentals.hasMoreElements()) {
+           Rental each = (Rental) rentals.nextElement();
+           result += each.getFrequentRenterPoints();
+        }
+        return result;
+     }
+ 
+ public String statement() {
    Enumeration rentals = _rentals.elements();
    String result = "Rental Record for " + getName() + "\n";
    while (rentals.hasMoreElements()) {
@@ -116,32 +133,8 @@ public String statement() {
                    " frequent renter points";
    return result;
 }
-    
-    private double getTotalCharge() {
-       double result = 0;
-       Enumeration rentals = _rentals.elements();
-       while (rentals.hasMoreElements()) {
-          Rental each = (Rental) rentals.nextElement();
-          result += each.getCharge();
-       }
-       return result;
-     }
-
-     private int getTotalFrequentRenterPoints(){
-        int result = 0;
-        Enumeration rentals = _rentals.elements();
-        while (rentals.hasMoreElements()) {
-           Rental each = (Rental) rentals.nextElement();
-           result += each.getFrequentRenterPoints();
-        }
-        return result;
-     }
-
-    private double amountFor(Rental aRental) {
-      return aRental.getCharge();  // agora apenas delega chamada para método movido
-   }
-    
-    public String htmlStatement() {
+ 
+public String htmlStatement() {
    Enumeration rentals = _rentals.elements();
    String result = "<H1>Rentals for <EM>" + getName() + "</EM></H1><P>\n";
    while (rentals.hasMoreElements()) {
@@ -158,5 +151,30 @@ public String statement() {
           "</EM> frequent renter points<P>";
    return result;
 }
-    
-  }
+
+}
+
+abstract class Price {
+   abstract int getPriceCode();
+   int getFrequentRenterPoints(int daysRented) {
+       return 1;
+   }
+}
+ 
+class ChildrensPrice extends Price {
+   int getPriceCode() {
+       return Movie.CHILDRENS;
+   }
+}
+ 
+class NewReleasePrice extends Price {
+   int getPriceCode() {
+       return Movie.NEW_RELEASE;
+   }
+}
+ 
+class RegularPrice extends Price {
+   int getPriceCode() {
+       return Movie.REGULAR;
+   }
+}
